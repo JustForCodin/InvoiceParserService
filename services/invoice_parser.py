@@ -83,7 +83,7 @@ def parse_invoice():
             f.close()
             files_count += 1
 
-        parser = InvoiceParser(os.path.join(attachments_path, record_id, file_name), 'best.pt')
+        parser = InvoiceParser(os.path.join(attachments_path, record_id, file_name), '../best.pt')
         invoice_dict = parser.invoice_to_dict()
         invoice_dict_sorted = parser.sort_invoice_dict_by_keys(invoice_dict)
         decoded_invoice = parser.decode_keys(invoice_dict_sorted)
