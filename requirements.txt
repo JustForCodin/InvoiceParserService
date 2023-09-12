@@ -6,3 +6,4 @@ tensorflow==2.11.0
 ultralytics==8.0.141
 flask==2.2.5
 simple-salesforce==1.12.5
+gunicorn==21.2.0
