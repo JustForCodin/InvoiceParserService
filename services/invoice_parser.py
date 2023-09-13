@@ -81,6 +81,7 @@ def parse_invoice():
         with open(os.path.join(attachments_path, record_id, file_name), 'wb') as f:
             f.write(sf_request.content)
             f.close()
+            print(f"==== DOWLOADED FILE {os.path.join(attachments_path, record_id, file_name)}")
             files_count += 1
 
         parser = InvoiceParser(os.path.join(attachments_path, record_id, file_name), '../best.pt')
