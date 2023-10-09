@@ -1,7 +1,9 @@
+from dateutil.parser import parse
 from ultralytics import YOLO
 import tensorflow as tf
 from PIL import Image
 import pytesseract
+import datetime
 import itertools 
 import json
 import cv2
@@ -11,6 +13,36 @@ def chunks(data, SIZE=4):
     it = iter(data)
     for i in range(0, len(data), SIZE):
         yield {k:data[k] for k in itertools.islice(it, SIZE)}
+
+def is_date(string, fuzzy=False):
+    """
+    Return whether the string can be interpreted as a date.
+
+    :param string: str, string to check for date
+    :param fuzzy: bool, ignore unknown tokens in string if True
+    """
+    try: 
+        parse(string, fuzzy=fuzzy)
+        return True
+    except ValueError:
+        return False
+
+def is_int(value: str) -> bool:
+    try:
+        int(value)
+        return True
+    except:
+        return False
+
+def is_currency(value: str) -> bool:
+    if "$" in value:
+        return True
+    return False
+
+def is_mail(value: str) -> bool:
+    if "@" in value:
+        return True
+    return False
 
 class InvoiceParser:
     img_path: str
@@ -153,12 +185,20 @@ class InvoiceParser:
         del invoice_dict_sorted
         return decoded_invoice
 
-# parser = InvoiceParser(
-#     # '/Users/odrozd/Desktop/abstract-black-invoice-template-design_1017-15046.png',
-#     'images/test002.png',
-#     '/Users/odrozd/Desktop/best.pt'
-# )
-# invoice_dict = parser.invoice_to_dict()
-# invoice_dict_sorted = parser.sort_invoice_dict_by_keys(invoice_dict)
-# decoded_invoice = parser.decode_keys(invoice_dict_sorted)
-# print(json.dumps(decoded_invoice, indent=4))
+    def convert_to_sf_format(self, decoded_invoice: dict):
+        for v in decoded_invoice.values():
+            if is_date(v):
+                v = datetime.datetime.strptime(v, '%m-%d-%y').strftime('%Y-%m-%d')
+            if is_currency(v):
+                v = v.replace("$", "")
+
+parser = InvoiceParser(
+    # '/Users/odrozd/Desktop/abstract-black-invoice-template-design_1017-15046.png',
+    '/Users/admin/Desktop/word-invoice-template-2x.jpg',
+    '/Users/admin/InvoiceParserService/nano_best.pt'
+)
+invoice_dict = parser.invoice_to_dict()
+invoice_dict_sorted = parser.sort_invoice_dict_by_keys(invoice_dict)
+decoded_invoice = parser.decode_keys(invoice_dict_sorted)
+final_invoice = patser.convert_to_sf_format(decoded_invoice)
+print(json.dumps(final_invoice, indent=4))
