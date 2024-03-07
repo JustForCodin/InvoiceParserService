@@ -3,7 +3,7 @@ from ultralytics import YOLO
 import tensorflow as tf
 from PIL import Image
 import pytesseract
-import datetime
+import dateparser
 import itertools 
 import json
 import cv2
@@ -185,20 +185,22 @@ class InvoiceParser:
         del invoice_dict_sorted
         return decoded_invoice
 
-    def convert_to_sf_format(self, decoded_invoice: dict):
-        for v in decoded_invoice.values():
-            if is_date(v):
-                v = datetime.datetime.strptime(v, '%m-%d-%y').strftime('%Y-%m-%d')
+    def convert_to_mysql_format(self, decoded_invoice: dict):
+        for k, v in decoded_invoice.items():
+            if k == "dueDate" or k == "invoiceDate":
+                v = dateparser.parse(v).strftime("%Y-%m-%d")
+                decoded_invoice[k] = v
             if is_currency(v):
                 v = v.replace("$", "")
+        return decoded_invoice
 
-parser = InvoiceParser(
-    # '/Users/odrozd/Desktop/abstract-black-invoice-template-design_1017-15046.png',
-    '/Users/admin/Desktop/word-invoice-template-2x.jpg',
-    '/Users/admin/InvoiceParserService/nano_best.pt'
-)
-invoice_dict = parser.invoice_to_dict()
-invoice_dict_sorted = parser.sort_invoice_dict_by_keys(invoice_dict)
-decoded_invoice = parser.decode_keys(invoice_dict_sorted)
-final_invoice = patser.convert_to_sf_format(decoded_invoice)
-print(json.dumps(final_invoice, indent=4))
+# parser = InvoiceParser(
+#     # '/Users/odrozd/Desktop/abstract-black-invoice-template-design_1017-15046.png',
+#     '/Users/admin/Desktop/images/test006.png',
+#     '/Users/admin/InvoiceParserService/nano_best.pt'
+# )
+# invoice_dict = parser.invoice_to_dict()
+# invoice_dict_sorted = parser.sort_invoice_dict_by_keys(invoice_dict)
+# decoded_invoice = parser.decode_keys(invoice_dict_sorted)
+# final_invoice = parser.convert_to_sf_format(decoded_invoice)
+# print(json.dumps(final_invoice, indent=4))

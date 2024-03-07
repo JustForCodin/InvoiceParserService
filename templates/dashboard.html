@@ -1,0 +1,14 @@
+{% extends 'layout.html' %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+    <h2>Welcome, {{ customer.FullName }}!</h2>
+    <h3>Your Invoices:</h3>
+    <ul>
+        {% for invoice in invoices %}
+            <li>{{ invoice.BillFrom }} to {{ invoice.BillTo }} (Due: {{ invoice.DueDate }})</li>
+        {% endfor %}
+    </ul>
+    <p><a href="{{ url_for('dashboard') }}">Back to Dashboard</a></p>
+{% endblock %}

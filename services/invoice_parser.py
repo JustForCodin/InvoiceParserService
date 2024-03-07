@@ -1,94 +1,155 @@
-from simple_salesforce import Salesforce, SalesforceLogin, SFType
 from flask import *
-from datetime import timedelta
 from utils.parse import InvoiceParser
-import pandas as pd
-import json
+from utils.db import Customer, Invoice, InvoiceItem, _db
+from utils.hash_gen import generate_password_hash, check_password_hash
 import os
+import json
 
-record_id = ""
+app = Flask(__name__, template_folder='../templates')
 
-app = Flask(__name__)
+UPLOAD_FOLDER = 'uploads'   
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:Alex120490@localhost/invoice_parser_db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SECRET_KEY'] = 'DbR228h321q765rD3Tzxc1'
+_db.init_app(app)
 
 @app.route('/')
 def index():
-    return '<h1>Hello! InvoiceParser Web Service is working!</h1>'
+    return render_template('upload.html')
 
-@app.route('/parsed-invoice', methods=['POST'])
-def parse_invoice():
-    # Connect to Salesforce org
-    login_info = json.load(open("login.json"))
-    username = login_info['username']
-    password = login_info['password']
-    security_token = login_info['security_token']
-    # domain = "login"
+@app.route('/upload', methods=['GET', 'POST'])
+def upload_file():
+    if request.method == 'POST':
+        if 'image' not in request.files:
+            return jsonify({'message': 'No file part'}), 400
+        file = request.files['image']
+        if file.filename == '':
+            return jsonify({'message': 'No selected file'}), 499
 
-    session_id, instance = SalesforceLogin(
-        username=username, password=password,
-        security_token=security_token
-    )
-    sf = Salesforce(instance=instance, session_id=session_id)
+        if file:
+            file.save(os.path.join(app.config['UPLOAD_FOLDER'], file.filename))
+            parser = InvoiceParser(
+                os.path.join(app.config['UPLOAD_FOLDER'], file.filename),
+                '/Users/macadmin/InvoiceParserService/nano_best.pt'
+            )
+
+            invoice_dict = parser.invoice_to_dict()
+            invoice_dict_sorted = parser.sort_invoice_dict_by_keys(invoice_dict)
+            decoded_invoice = parser.decode_keys(invoice_dict_sorted)
+            final_invoice = parser.convert_to_mysql_format(decoded_invoice)
+            print(json.dumps(final_invoice, indent=4))
+
+            # new_invoice = Invoice(
+            #     CustomerID=session.get('customer_id'),
+            #     BillFrom=final_invoice['billFrom'],
+            #     BillTo=final_invoice['billTo'],
+            #     InvoiceDate=final_invoice['invoiceDate'],
+            #     DueDate=final_invoice['dueDate']
+            # )
+            new_invoice = Invoice()
+            new_invoice.CustomerID = session.get('customer_id')
+            try:
+                new_invoice.BillFrom = final_invoice['billFrom']
+            except:
+                new_invoice.BillFrom = "Unknown Sender"
+            
+            try:
+                new_invoice.BillTo = final_invoice["billTo"]
+            except:
+                new_invoice.BillTo = "Unknown Client"
+            
+            try:
+                new_invoice.InvoiceDate = final_invoice["invoiceDate"]
+            except:
+                new_invoice.InvoiceDate = "2022-07-01"
+            
+            try:
+                new_invoice.DueDate = final_invoice['dueDate']
+            except:
+                new_invoice.DueDate = "2023-11-12"
+
+            print(f"Invoice {new_invoice.InvoiceID} was inserted to BD.")
+            _db.session.add(new_invoice)
+            _db.session.commit()
+
+            new_item = InvoiceItem()
+            new_item.InvoiceID = new_invoice.InvoiceID
+            for item in final_invoice['items']:
+                # new_item = InvoiceItem(
+                #     InvoiceID=new_invoice.InvoiceID,
+                #     ItemDescription=item['itemDescription'],
+                #     UnitPrice=item['unitPrice'],
+                #     Quantity=item['quantity'],
+                #     LineTotal=item['lineTotal']
+                # )
+                
+                try:
+                    new_item.ItemDescription = item['itemDescription']
+                except:
+                    new_item.ItemDescription = "[no description]"
+
+                try:
+                    new_item.UnitPrice = item["unitPrice"]
+                except:
+                    new_item.UnitPrice = "0.0"
+                
+                try:
+                    new_item.Quantity = item["quantity"]
+                except:
+                    new_item.Quantity = "0.0"
+                
+                try:
+                    new_item.LineTotal = item["lineTotal"]
+                except:
+                    new_item.LineTotal = "0.0"
+
+                _db.session.add(new_item)
+                print(f"[+] Item {new_item.ItemID} was inserted to DB.")
+            _db.session.commit()
+
+            return jsonify({'message': 'File uploaded successfully'})
 
 
-    files_ids = request.get_json(force=True)
-    print(f"FILE IDS JSON  {files_ids} TYPE {type(files_ids)}")
-    
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        full_name = request.form['full_name']
+        email = request.form['email']
+        password = request.form['password']
 
-    # Query invoice that user has just uploaded.
-    soql_query = f"""
-	SELECT ContentDocumentId, Title, FileExtension, VersionData 
-	FROM ContentVersion 
-	WHERE ContentDocumentId IN {str(files_ids).replace('[', '(').replace(']', ')')}
-    AND IsLatest=True
-	ORDER BY CreatedDate DESC
-	"""
+        hashed_password = generate_password_hash(password)
 
-    print(f"[*] SOQL is: {soql_query}")
+        new_user = Customer(FullName=full_name, Email=email, Password=hashed_password)
+        _db.session.add(new_user)
+        _db.session.commit()
 
-    response = sf.query(soql_query)
-    records_list = response.get('records')
-    next_record_url = response.get('nextRecordUrl')
+        return redirect(url_for('login'))
 
-    while not response.get('done'):
-        response = sf.query_more(next_record_url, identifier_is_url=True)
-        records_list.extend(response.get('records'))
-        next_record_url = response.get('nextRecordUrl')
+    return render_template('register.html')
 
-    df_records = pd.DataFrame(records_list)
-    instance_name = sf.sf_instance
-    attachments_path = "./AttachmentsDownload"
 
-    invoice_jsonified = ""
-    files_count = 0
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        email = request.form['email']
+        password = request.form['password']
 
-    files = []
-    # Download invoice
-    for row in df_records.iterrows():
-        invoice_url = row[1]['VersionData']
-        record_id = row[1]['ContentDocumentId']
-        file_name = record_id + row[1]['FileExtension']
+        customer = Customer.query.filter_by(Email=email).first()
 
-        # if directory to store invoices wasn't created, create one
-        if not os.path.exists(os.path.join(attachments_path, record_id)):
-            os.makedirs(os.path.join(attachments_path, record_id))
+        if customer and check_password_hash(customer.Password, password):
+            session['customer_id'] = customer.CustomerID
+            return redirect(url_for('dashboard'))
 
-        # Download invoice from org
-        sf_request = sf.session.get(f"https://{instance_name}{invoice_url}",
-                                headers=sf.headers
-        )
+    return render_template('login.html')
 
-        # Save as .pdf file
-        with open(os.path.join(attachments_path, record_id, file_name), 'wb') as f:
-            f.write(sf_request.content)
-            f.close()
-            print(f"==== DOWLOADED FILE {os.path.join(attachments_path, record_id, file_name)}")
-            files_count += 1
 
-        parser = InvoiceParser(os.path.join(attachments_path, record_id, file_name), '../nano_best.pt')
-        invoice_dict = parser.invoice_to_dict()
-        invoice_dict_sorted = parser.sort_invoice_dict_by_keys(invoice_dict)
-        decoded_invoice = parser.decode_keys(invoice_dict_sorted)
-        files.append(decoded_invoice)
-        print(f"[*] INVOICE JSON ==> {json.dumps(files)}")
-    
-    return json.dumps(files)
+@app.route('/dashboard')
+def dashboard():
+    if 'customer_id' in session:
+        customer_id = session['customer_id']
+        customer = Customer.query.get(customer_id)
+        invoices = customer.invoices
+        return render_template('dashboard.html', customer=customer, invoices=invoices)
+
+    return redirect(url_for('login'))

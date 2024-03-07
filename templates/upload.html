@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Image Upload Form</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        #container {
+            width: 300px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        form {
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+            margin-top: 30px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        input[type="file"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        input[type="submit"] {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            background-color: #333;
+            color: #fff;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        input[type="submit"]:hover {
+            background-color: #555;
+        }
+
+        #toastMessage {
+            display: none;
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            color: #fff;
+            padding: 20px;
+            border-radius: 5px;
+        }
+
+        #toastMessage.success {
+            background: #4CAF50;
+        }
+
+        #toastMessage.error {
+            background: #f44336;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <h1>Upload an Image</h1>
+        <form action="/upload" method="post" enctype="multipart/form-data">
+            <label for="image">Select an image:</label>
+            <input type="file" name="image" id="image" accept="image/*">
+            <input type="submit" value="Upload" onclick="uploadFile(event)">
+        </form>
+        <div id="toastMessage"></div>
+    </div>
+</body>
+<script>
+    function showToast(message, type) {
+        var toast = document.getElementById('toastMessage');
+        toast.innerText = message;
+        toast.className = type;
+        toast.style.display = 'block';
+        setTimeout(function() {
+            toast.style.display = 'none';
+        }, 3000);
+    }
+
+    function uploadFile(event) {
+        event.preventDefault();
+        var formData = new FormData();
+        var fileInput = document.getElementById('image');
+        formData.append('image', fileInput.files[0]);
+
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', '/upload', true);
+        xhr.onload = function () {
+            if (xhr.status === 200) {
+                var response = JSON.parse(xhr.responseText);
+                showToast(response.message, 'success');
+            } else {
+                showToast('Error uploading file', 'error');
+            }
+        };
+        xhr.send(formData);
+    }
+</script>
+</html>

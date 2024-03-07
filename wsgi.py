@@ -1,4 +1,4 @@
-from services.invoice_parser import app
+from services.invoice_parser import *
 
 def main():
 	app.run()
