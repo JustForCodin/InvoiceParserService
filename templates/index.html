@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InvoiceParser</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f9f9f9;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        header {
+            background-color: #4726ff;
+            color: #fff;
+            padding: 20px;
+            text-align: center;
+        }
+        section {
+            padding: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .section-text {
+            flex: 1;
+            padding: 20px;
+            font-size: 1.5em;
+        }
+        .section-image {
+            flex: 1;
+            text-align: center;
+        }
+        .section-image img {
+            width: 700px;
+            height: 400px;
+            object-fit: cover;;
+        }
+        .center-section {
+            text-align: center;
+            font-size: 20px;
+        }
+        .center-section a {
+            color: #333;
+            text-decoration: underline;
+            margin: 0 10px;
+        }
+        .center-section a:hover {
+            color: #d2dbff;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>InvoiceParser</h1>
+        <p>Automatically parse invoices with ease</p>
+    </header>
+    
+    <section>
+        <div class="section-text">
+            <h2>Automatic Invoice Parsing</h2>
+            <p>Scan your invoices, store all the data in your account, get detailed analytics - all in one app!</p>
+        </div>
+        <div class="section-image">
+            <img src="../static/images/section1.png" alt="Invoice Parser">
+        </div>
+    </section>
+
+    <section>
+        <div class="section-image">
+            <img src="../static/images/section2.png" alt="Data Processing">
+        </div>
+        <div class="section-text">
+            <h2>Data Processing</h2>
+            <p>Powered by AI and OCR, InvoiceParser recognizes data from your invoices with 99% precision.</p>
+        </div>
+    </section>
+
+    <section class="center-section">
+        <h2>Ready to get started?</h2>
+        <p>
+            <a href="{{ url_for('blueprint.register') }}">Register</a> or <a href="{{url_for('blueprint.login')}}">Log In</a>
+        </p>
+    </section>
+</body>
+</html>

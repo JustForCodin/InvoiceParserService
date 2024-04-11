@@ -1,5 +1,4 @@
 from flask_sqlalchemy import SQLAlchemy
-from services.invoice_parser import app
 
 _db = SQLAlchemy()
 

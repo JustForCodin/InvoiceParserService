@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta id="my-data" data-invoices-per-sender="{{ invoices_per_sender }}"
+                  data-purchased-products="{{ purchased_products }}"
+                  data-product-costs="{{ product_costs }}">
+    <title>Analytics</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f9f9f9;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chart-container {
+            width: calc(50% - 20px); 
+            margin-bottom: 20px;
+        }
+
+        canvas {
+            width: 100%;
+            height: auto;
+            display: block;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            background-color: #fff;
+        }
+
+        h1 {
+            color: #fff;
+            padding: 10px 20px;
+            margin: 0;
+        }
+        .header {
+            background-color: #4726ff;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .buttons button {
+            margin-left: 10px;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            background-color: #fff;
+            color: #333;
+            cursor: pointer;
+        }
+        .buttons button:hover {
+            background-color: #d2dbff;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f9f9f9;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Welcome, {{ customer.FullName }}!</h1>
+        <div class="buttons">
+            <button onclick="location.href='/add-invoice'">Add invoice</button>
+            <button onclick="location.href='/dashboard'">dashboard</button>
+            <button onclick="location.href='/analytics'">Analytics</button>
+            <button onclick="location.href='/logout'">Log Out</button>
+        </div>
+    </div>
+    <div class="container">
+        <div class="chart-container">
+            <h2>Invoices per Sender</h2>
+            <canvas id="invoicesPerSenderChart"></canvas>
+        </div>
+        <div class="chart-container">
+            <h2>Purchased Products</h2>
+            <canvas id="purchasedProductsChart"></canvas>
+        </div>
+        <div class="chart-container">
+            <h2>Product Costs</h2>
+            <canvas id="productCostsChart"></canvas>
+        </div>
+    </div>
+    <script>
+        window.onload = function() {
+            var maxLabelLength = 10;
+            var meta = document.getElementById('my-data');
+    
+            // get all the labels for charts
+            var getPurchasedProductsLabels = function() {
+                return Object.keys(JSON.parse(meta.dataset.purchasedProducts));
+            };
+    
+            var getProductCostsLabels = function() {
+                return Object.keys(JSON.parse(meta.dataset.productCosts));
+            };
+    
+            /// shortens labels if they are longer then maxLength
+            var trimLabels = function(labels) {
+                return labels.map(function(label) {
+                    return label.length > maxLabelLength ? label.substring(0, maxLabelLength) + '...' : label;
+                });
+            };
+    
+            /// loads data for charts
+            var prepareChartData = function(labels, label, data) {
+                return {
+                    labels: labels,
+                    datasets: [{
+                        label: label,
+                        data: data,
+                        backgroundColor: ['#ff6384', '#36a2eb', '#ffce56', '#4bc0c0', '#9966ff']
+                    }]
+                };
+            };
+    
+            var ctx1 = document.getElementById('invoicesPerSenderChart').getContext('2d');
+            var ctx3 = document.getElementById('purchasedProductsChart').getContext('2d');
+            var ctx4 = document.getElementById('productCostsChart').getContext('2d');
+    
+            // fetch data and display charts
+            var displayCharts = function() {
+                var purchaesProductsLabels = trimLabels(getPurchasedProductsLabels());
+                var productCostsLabels = trimLabels(getProductCostsLabels());
+    
+                var invoicesPerSenderData = prepareChartData([],"Invoices/sender", JSON.parse(meta.dataset.invoicesPerSender));
+                var purchasedProductsData = prepareChartData(purchaesProductsLabels, "Products", JSON.parse(meta.dataset.purchasedProducts));
+                var productCostsData = prepareChartData(productCostsLabels, "Prices", JSON.parse(meta.dataset.productCosts));
+    
+                var invoicesPerSenderChart = new Chart(ctx1, {
+                    type: 'bar',
+                    data: invoicesPerSenderData
+                });
+    
+                var purchasedProductsChart = new Chart(ctx3, {
+                    type: 'bar',
+                    data: purchasedProductsData
+                });
+    
+                var productCostsChart = new Chart(ctx4, {
+                    type: 'bar',
+                    data: productCostsData
+                });
+            };
+    
+            displayCharts();
+        };
+    </script>
+</body>
+</html>

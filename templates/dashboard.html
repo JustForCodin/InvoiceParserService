@@ -1,14 +1,90 @@
-{% extends 'layout.html' %}
-
-{% block title %}Dashboard{% endblock %}
-
-{% block content %}
-    <h2>Welcome, {{ customer.FullName }}!</h2>
-    <h3>Your Invoices:</h3>
-    <ul>
-        {% for invoice in invoices %}
-            <li>{{ invoice.BillFrom }} to {{ invoice.BillTo }} (Due: {{ invoice.DueDate }})</li>
-        {% endfor %}
-    </ul>
-    <p><a href="{{ url_for('dashboard') }}">Back to Dashboard</a></p>
-{% endblock %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f9f9f9;
+        }
+        h1 {
+            color: #fff;
+            padding: 10px 20px;
+            margin: 0;
+        }
+        .header {
+            background-color: #4726ff;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .buttons button {
+            margin-left: 10px;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            background-color: #fff;
+            color: #333;
+            cursor: pointer;
+        }
+        .buttons button:hover {
+            background-color: #d2d4ff;
+        }
+        table {
+            width: 100%;
+            /* margin: 20px auto; */
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #5c4bff;
+            color: #fff;
+        }
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Welcome, {{ customer.FullName }}!</h1>
+        <div class="buttons">
+            <button onclick="location.href='/add-invoice'">Add invoice</button>
+            <button onclick="location.href='/analytics'">Analytics</button>
+            <button onclick="location.href='/logout'">Log Out</button>
+        </div>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>Invoice ID</th>
+                <th>Bill From</th>
+                <th>Bill To</th>
+                <th>Invoice Date</th>
+                <th>Due Date</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for invoice in invoices %}
+            <tr>
+                <td>{{ invoice.InvoiceID }}</td>
+                <td><a href="{{ url_for('blueprint.show_items', invoice_id=invoice.InvoiceID) }}">{{ invoice.BillFrom }}</a></td>
+                <td>{{ invoice.BillTo }}</td>
+                <td>{{ invoice.InvoiceDate }}</td>
+                <td>{{ invoice.DueDate }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>
